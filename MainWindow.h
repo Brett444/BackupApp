@@ -2,9 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QProgressDialog>
+#include <QLabel>
 
 #include "PndDefs.h"
+#include "ProgressDlg.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -16,9 +17,12 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 private:
+    void LogFileFail(const QString &filepath);
+
+private:
     QString BackupStr, DestStr;
     uint32 NumCopied, NumFiles;
-    QProgressDialog *p_progressdlg;
+    CProgressDlg *p_progressdlg;
 
     uint32 NumFilesInFolder(const QString& dirPath);
     bool CopyDirectory(const QString &sourceDir, const QString &destinationDir);

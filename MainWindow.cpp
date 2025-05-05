@@ -9,6 +9,9 @@
 #include <QDirIterator>
 #include <QFile>
 
+#include <iostream>
+#include <fstream>
+
 #include <sstream>
 #include <string>
 #include <filesystem>
@@ -44,6 +47,32 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::LogFileFail(const QString &filepath)
+{
+    std::ofstream logfile;
+    QString logpath, timestr, logstr;
+    char charbuf[50];
+    std::tm timeinfo;
+
+    logpath = QCoreApplication::applicationDirPath();
+    logpath += "/LogFile.txt";
+
+    std::time_t now = std::time(nullptr);
+    localtime_s(&timeinfo, &now);
+    std::strftime(charbuf, 50, "%Y-%m-%d %H:%M:%S", &timeinfo);
+    timestr = charbuf;
+
+    logstr = timestr + QString(", ") + filepath;
+
+    logfile.open(logpath.toStdString(), std::ios::app);
+
+    if (logfile.is_open())
+    {
+        logfile << logstr.toStdString() << std::endl;
+        logfile.close();
+    }
+}
+
 void MainWindow::on_BackupFolder_btn_clicked()
 {
     QString buf = QFileDialog::getExistingDirectory(this, "Select Folder To Backup", BackupStr.toStdString().c_str(), QFileDialog::ShowDirsOnly);
@@ -68,9 +97,10 @@ void MainWindow::on_DestFolder_btn_clicked()
 
 void MainWindow::on_StartBackup_btn_clicked()
 {
-    std::stringstream time_ss;
     CMyCString backuppath, destpath, endfolder, timestr;
-    bool createdirok;
+    bool createdirok, backupok;
+    std::tm timeinfo;
+    char charbuf[50];  // 50 hardcoded here and below.
 
     backuppath = BackupStr.toStdString();
     destpath = DestStr.toStdString();
@@ -81,10 +111,9 @@ void MainWindow::on_StartBackup_btn_clicked()
         endfolder = backuppath.GetSubStr1(0, 0);
 
     std::time_t now = std::time(nullptr);
-    std::tm *p_localtime = std::localtime(&now);
-
-    time_ss << std::put_time(p_localtime, "%Y_%m_%d %H_%M_%S");
-    timestr = time_ss.str();
+    localtime_s(&timeinfo, &now);
+    std::strftime(charbuf, 50, "%Y_%m_%d %H_%M_%S", &timeinfo);
+    timestr = charbuf;
 
     destpath.AppendStr("/");
     destpath.AppendStr(endfolder.c_str());
@@ -100,36 +129,45 @@ void MainWindow::on_StartBackup_btn_clicked()
     }
     catch (std::exception& e)
     {
-        QMessageBox::information(this, "Error Creating Destinatin Folder", e.what(), QMessageBox::Ok);
+        ui->StatusBar->showMessage("Error Creating Destination Folder");
+        QMessageBox::information(this, "Error Creating Destination Folder", e.what(), QMessageBox::Ok);
         return;
     }
 
     if (!createdirok)
     {
+        ui->StatusBar->showMessage("Could Not Create Destination Folder");
         QMessageBox::information(this, "Error Creating Folder", "Could Not Create Destination Folder", QMessageBox::Ok);
         return;
     }
 
     try
     {
+        // this is the c++ way to do it but is just blocks.
         //fs::copy(src_obj, dest_obj, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
 
         NumFiles = NumFilesInFolder(backuppath.c_str());
-        p_progressdlg = new QProgressDialog("Backup in progress.", "Cancel", 0, NumFiles);
-        p_progressdlg->setWindowModality(Qt::ApplicationModal);
+        p_progressdlg = new CProgressDlg();
+        p_progressdlg->SetFileCount(NumCopied, NumFiles);
         p_progressdlg->show();
-        p_progressdlg->setValue(0);
-        CopyDirectory(backuppath.c_str(), destpath.c_str());
-        delete p_progressdlg;
+        backupok = CopyDirectory(backuppath.c_str(), destpath.c_str());
     }
     catch (std::exception& e)
     {
-        delete p_progressdlg;
         QMessageBox::information(this, "Error Copying Files", e.what(), QMessageBox::Ok);
+        delete p_progressdlg;
+        ui->StatusBar->showMessage("Backup Failed.");
         return;
     }
 
-    QMessageBox::information(this, "Backup Status", "Backup Complete.", QMessageBox::Ok);
+    if (p_progressdlg->BackupWasCanceled)
+        ui->StatusBar->showMessage("Backup Canceled.");
+    else if (!backupok)
+        ui->StatusBar->showMessage("Backup Failed.");
+    else
+        ui->StatusBar->showMessage("Backup Completed.");
+
+    delete p_progressdlg;
 }
 
 uint32 MainWindow::NumFilesInFolder(const QString& dirPath)
@@ -159,6 +197,7 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
             return false;
     }
 
+    ui->StatusBar->showMessage("Backup In Progress...");
     NumCopied = 0;
     QDirIterator it(sourceDir, QDir::AllEntries | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext())
@@ -180,16 +219,23 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
         {
             if (!QFile::copy(filePath, destFilePath))
             {
+                if (p_progressdlg->LogFails)
+                    LogFileFail(filePath);
                 CMyCString errstr;
                 errstr.Format("Failed to copy %s to %s.", filePath.toStdString().c_str(), destFilePath.toStdString().c_str());
-                QMessageBox::information(this, "Copy Failed", "errstr.c_str()", QMessageBox::Ok);
-                return false;
+                QMessageBox::information(this, "File Copy Failed, Click Ok To Continue...", "errstr.c_str()", QMessageBox::Ok);
+                //return false;
             }
-            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            NumCopied += 1;
-            if (p_progressdlg->wasCanceled())
-                return false;
-            p_progressdlg->setValue(NumCopied);
+            else
+            {
+                // LogFileFail(filePath);
+                // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                QCoreApplication::processEvents();
+                NumCopied += 1;
+                if (p_progressdlg->BackupWasCanceled)
+                    return false;
+                p_progressdlg->SetFileCount(NumCopied, NumFiles);
+            }
         }
     }
     return true;
