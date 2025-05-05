@@ -5,22 +5,28 @@
 #include <QSettings>
 #include <QMessageBox>
 
+#include <QDir>
+#include <QDirIterator>
+#include <QFile>
+
 #include <sstream>
 #include <string>
 #include <filesystem>
+#include <thread>
+#include <chrono>
 
 #include "MyCString.h"
 
 namespace fs = std::filesystem;
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings("BrettPrograms", "BackupApp");
 
     BackupStr = settings.value("BackupFolder", "C:").toString();
     DestStr = settings.value("DestFolder", "D:").toString();
+
+    NumCopied = 0;
 
     ui->setupUi(this);
 
@@ -94,7 +100,7 @@ void MainWindow::on_StartBackup_btn_clicked()
     }
     catch (std::exception& e)
     {
-        QMessageBox::information(this, "Error Creating Folder", "Could Not Create Destination Folder", QMessageBox::Ok);
+        QMessageBox::information(this, "Error Creating Destinatin Folder", e.what(), QMessageBox::Ok);
         return;
     }
 
@@ -106,14 +112,86 @@ void MainWindow::on_StartBackup_btn_clicked()
 
     try
     {
-        fs::copy(src_obj, dest_obj, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+        //fs::copy(src_obj, dest_obj, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+
+        NumFiles = NumFilesInFolder(backuppath.c_str());
+        p_progressdlg = new QProgressDialog("Backup in progress.", "Cancel", 0, NumFiles);
+        p_progressdlg->setWindowModality(Qt::ApplicationModal);
+        p_progressdlg->show();
+        p_progressdlg->setValue(0);
+        CopyDirectory(backuppath.c_str(), destpath.c_str());
+        delete p_progressdlg;
     }
     catch (std::exception& e)
     {
+        delete p_progressdlg;
         QMessageBox::information(this, "Error Copying Files", e.what(), QMessageBox::Ok);
         return;
     }
 
     QMessageBox::information(this, "Backup Status", "Backup Complete.", QMessageBox::Ok);
+}
+
+uint32 MainWindow::NumFilesInFolder(const QString& dirPath)
+{
+    QDirIterator it(dirPath, QDir::Files, QDirIterator::Subdirectories);
+    uint32 count = 0;
+
+    while (it.hasNext())
+    {
+        it.next();
+        count++;
+    }
+    return count;
+}
+
+// copies all files including subfolders
+bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinationDir)
+{
+    QDir dir(sourceDir);
+    if (!dir.exists())
+        return false;
+
+    QDir destDir(destinationDir);
+    if (!destDir.exists())
+    {
+        if (!destDir.mkpath("."))
+            return false;
+    }
+
+    NumCopied = 0;
+    QDirIterator it(sourceDir, QDir::AllEntries | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    while (it.hasNext())
+    {
+        it.next();
+        QString filePath = it.filePath();
+        QString relativePath = it.fileInfo().isDir() ? it.fileName() : it.filePath().mid(sourceDir.length() + 1);
+        QString destFilePath = destinationDir + "/" + relativePath;
+        if (it.fileInfo().isDir())
+        {
+            QDir subDir(destFilePath);
+            if (!subDir.exists())
+            {
+                if(!subDir.mkpath("."))
+                    return false;
+            }
+        }
+        else
+        {
+            if (!QFile::copy(filePath, destFilePath))
+            {
+                CMyCString errstr;
+                errstr.Format("Failed to copy %s to %s.", filePath.toStdString().c_str(), destFilePath.toStdString().c_str());
+                QMessageBox::information(this, "Copy Failed", "errstr.c_str()", QMessageBox::Ok);
+                return false;
+            }
+            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            NumCopied += 1;
+            if (p_progressdlg->wasCanceled())
+                return false;
+            p_progressdlg->setValue(NumCopied);
+        }
+    }
+    return true;
 }
 

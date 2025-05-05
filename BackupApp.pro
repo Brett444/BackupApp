@@ -10,16 +10,19 @@ CONFIG += c++17
 
 SOURCES += \
     MyCString.cpp \
+    ProgressDlg.cpp \
     main.cpp \
     MainWindow.cpp
 
 HEADERS += \
     MainWindow.h \
     MyCString.h \
-    PndDefs.h
+    PndDefs.h \
+    ProgressDlg.h
 
 FORMS += \
-    MainWindow.ui
+    MainWindow.ui \
+    ProgressDlg.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
