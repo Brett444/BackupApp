@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>417</width>
-    <height>204</height>
+    <height>284</height>
    </rect>
   </property>
   <property name="font">
@@ -156,6 +156,46 @@ background-color: rgb(0,230,0);
       </item>
       <item>
        <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <spacer name="horizontalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="LogFiles_chk">
+        <property name="text">
+         <string>Log Files That Failed To Copy</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_6">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>

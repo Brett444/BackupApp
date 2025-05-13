@@ -5,6 +5,8 @@
 #include <QLabel>
 
 #include "PndDefs.h"
+#include "MyCString.h"
+
 #include "ProgressDlg.h"
 
 QT_BEGIN_NAMESPACE
@@ -21,7 +23,9 @@ private:
 
 private:
     QString BackupStr, DestStr;
+    CMyCString DestFullPath;
     uint32 NumCopied, NumFiles;
+    bool LogFails;
     CProgressDlg *p_progressdlg;
 
     uint32 NumFilesInFolder(const QString& dirPath);
@@ -35,6 +39,8 @@ private slots:
     void on_BackupFolder_btn_clicked();
     void on_DestFolder_btn_clicked();
     void on_StartBackup_btn_clicked();
+
+    void on_LogFiles_chk_checkStateChanged(const Qt::CheckState &arg1);
 
 private:
     Ui::MainWindow *ui;

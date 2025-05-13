@@ -1,14 +1,11 @@
 #include "ProgressDlg.h"
 #include "ui_ProgressDlg.h"
 
-CProgressDlg::CProgressDlg(QWidget *parent)
-    : QDialog(parent)
-    , ui(new Ui::CProgressDlg)
+CProgressDlg::CProgressDlg(QWidget *parent) : QDialog(parent), ui(new Ui::CProgressDlg)
 {
     ui->setupUi(this);
 
     BackupWasCanceled = false;
-    LogFails = true;
     ui->Progress_pbar->setRange(0, 100);
     ui->Progress_pbar->setValue(0);
 }
@@ -30,9 +27,4 @@ void CProgressDlg::SetFileCount(uint32 count, uint32 total)
 void CProgressDlg::on_Cancel_btn_clicked()
 {
     BackupWasCanceled = true;
-}
-
-void CProgressDlg::on_LogFiles_chk_checkStateChanged(const Qt::CheckState &arg1)
-{
-    LogFails = !LogFails;
 }

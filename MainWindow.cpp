@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     DestStr = settings.value("DestFolder", "D:").toString();
 
     NumCopied = 0;
+    LogFails = true;
 
     ui->setupUi(this);
 
@@ -50,12 +51,12 @@ MainWindow::~MainWindow()
 void MainWindow::LogFileFail(const QString &filepath)
 {
     std::ofstream logfile;
-    QString logpath, timestr, logstr;
+    QString timestr, logstr;
+    CMyCString logpath;
     char charbuf[50];
     std::tm timeinfo;
 
-    logpath = QCoreApplication::applicationDirPath();
-    logpath += "/LogFile.txt";
+    logpath = DestFullPath + "/LogFile_BackupApp.txt";
 
     std::time_t now = std::time(nullptr);
     localtime_s(&timeinfo, &now);
@@ -64,7 +65,7 @@ void MainWindow::LogFileFail(const QString &filepath)
 
     logstr = timestr + QString(", ") + filepath;
 
-    logfile.open(logpath.toStdString(), std::ios::app);
+    logfile.open(logpath, std::ios::app);
 
     if (logfile.is_open())
     {
@@ -97,13 +98,13 @@ void MainWindow::on_DestFolder_btn_clicked()
 
 void MainWindow::on_StartBackup_btn_clicked()
 {
-    CMyCString backuppath, destpath, endfolder, timestr;
+    CMyCString backuppath, endfolder, timestr;
     bool createdirok, backupok;
     std::tm timeinfo;
     char charbuf[50];  // 50 hardcoded here and below.
 
     backuppath = BackupStr.toStdString();
-    destpath = DestStr.toStdString();
+    DestFullPath = DestStr.toStdString();
     if (backuppath.Contains("/"))
         endfolder = backuppath.GetSubStr2(-1, '/');  // if path is "C:/", endfolder will be empty
 
@@ -115,13 +116,13 @@ void MainWindow::on_StartBackup_btn_clicked()
     std::strftime(charbuf, 50, "%Y_%m_%d %H_%M_%S", &timeinfo);
     timestr = charbuf;
 
-    destpath.AppendStr("/");
-    destpath.AppendStr(endfolder.c_str());
-    destpath.AppendStr(" ");
-    destpath.AppendStr(timestr.c_str());
+    DestFullPath.AppendStr("/");
+    DestFullPath.AppendStr(endfolder.c_str());
+    DestFullPath.AppendStr(" ");
+    DestFullPath.AppendStr(timestr.c_str());
 
     fs::path src_obj = backuppath.c_str();
-    fs::path dest_obj = destpath.c_str();
+    fs::path dest_obj = DestFullPath.c_str();
 
     try
     {
@@ -150,7 +151,7 @@ void MainWindow::on_StartBackup_btn_clicked()
         p_progressdlg = new CProgressDlg();
         p_progressdlg->SetFileCount(NumCopied, NumFiles);
         p_progressdlg->show();
-        backupok = CopyDirectory(backuppath.c_str(), destpath.c_str());
+        backupok = CopyDirectory(backuppath.c_str(), DestFullPath.c_str());
     }
     catch (std::exception& e)
     {
@@ -219,7 +220,7 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
         {
             if (!QFile::copy(filePath, destFilePath))
             {
-                if (p_progressdlg->LogFails)
+                if (LogFails)
                     LogFileFail(filePath);
                 CMyCString errstr;
                 errstr.Format("Failed to copy %s to %s.", filePath.toStdString().c_str(), destFilePath.toStdString().c_str());
@@ -228,8 +229,8 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
             }
             else
             {
-                // LogFileFail(filePath);
-                // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                // LogFileFail(filePath);  // for testing
+                // std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // for testing
                 QCoreApplication::processEvents();
                 NumCopied += 1;
                 if (p_progressdlg->BackupWasCanceled)
@@ -239,5 +240,10 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
         }
     }
     return true;
+}
+
+void MainWindow::on_LogFiles_chk_checkStateChanged(const Qt::CheckState &arg1)
+{
+    LogFails = !LogFails;
 }
 

@@ -14,7 +14,7 @@ class CProgressDlg : public QDialog
     Q_OBJECT
 
 public:
-    bool BackupWasCanceled, LogFails;
+    bool BackupWasCanceled;
 
     explicit CProgressDlg(QWidget *parent = nullptr);
     ~CProgressDlg();
@@ -23,8 +23,6 @@ public:
 
 private slots:
     void on_Cancel_btn_clicked();
-
-    void on_LogFiles_chk_checkStateChanged(const Qt::CheckState &arg1);
 
 private:
     Ui::CProgressDlg *ui;
