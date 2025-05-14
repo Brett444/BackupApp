@@ -230,7 +230,7 @@ bool MainWindow::CopyDirectory(const QString &sourceDir, const QString &destinat
             else
             {
                 // LogFileFail(filePath);  // for testing
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // for testing
+                // std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // for testing
                 QCoreApplication::processEvents();
                 NumCopied += 1;
                 if (p_progressdlg->BackupWasCanceled)
