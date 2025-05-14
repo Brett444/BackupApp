@@ -18,6 +18,10 @@
   <property name="windowTitle">
    <string>Progress</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(170, 85, 0);
+</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="label">
@@ -64,13 +68,6 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Files Copied:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QLabel" name="FileCnt_lbl">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -79,7 +76,8 @@
         </sizepolicy>
        </property>
        <property name="styleSheet">
-        <string notr="true">border: 1px solid black</string>
+        <string notr="true">background-color: rgb(240, 240, 240);
+border: 1px solid black</string>
        </property>
        <property name="text">
         <string/>
@@ -128,6 +126,9 @@
        <height>0</height>
       </size>
      </property>
+     <property name="styleSheet">
+      <string notr="true">gridline-color: rgb(255, 255, 255);</string>
+     </property>
      <property name="value">
       <number>24</number>
      </property>
@@ -169,11 +170,11 @@
        <property name="styleSheet">
         <string notr="true">QPushButton{
 padding: 10px; 
-background-color: rgb(200,0,0); 
+background-color: rgb(224, 197, 170); 
 border: none  /* nec for hover color to work */
 }
 QPushButton:pressed{
-background-color: rgb(230,0,0);
+background-color: rgb(175, 150, 120);
 }</string>
        </property>
        <property name="text">

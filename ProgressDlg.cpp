@@ -19,7 +19,7 @@ void CProgressDlg::SetFileCount(uint32 count, uint32 total)
 {
     QString outstr;
 
-    outstr = QString::number(count) + " of " + QString::number(total);
+    outstr = QString("Files Copied: ") + QString::number(count) + " of " + QString::number(total);
     ui->FileCnt_lbl->setText(outstr);
     ui->Progress_pbar->setValue(count * 100 / total);
 }
